@@ -1,78 +1,100 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fulltext_search_example/user.dart';
 
 class SearchModel extends ChangeNotifier {
-//   /// 検索関連
-//   final searchController = TextEditingController();
-//   List<Teacher> filteredTeachers = []; // 検索してきた講師群
-//   List<Tag> tags = []; // 検索タグ
-//   List<String> selectedTags = []; // 検索対象になっているタグ
-//   List<dynamic> tokens = []; // n-gramのトークン
-//   bool existsFilteredTeacher = false;
-//   bool canLoadMoreFiltered = false;
-//   Query filterQuery = null;
-//   bool isFiltering = false; // 検索中
-//   bool showFilteredTeacher = false; // 検索モード（Page側で指定する）
-//   bool isProcessing = false;
-//
-//   /// GitHubアカウントでログインする
-//   Future signInWithGitHub() async {
-//     try {
-//       // 処理開始
-//       _setIsProcessing(true);
-//       await _usersRepository.signInWithGitHub();
-//       await pop();
-//       window.location.reload();
-//     } on ApplicationException catch (e) {
-//       notifyExceptionOnSlack(context, errorMessage: e.errorMessages.first);
-//     } catch (e) {
-//       notifyExceptionOnSlack(context, errorMessage: e.toString());
-//     } finally {
-//       // 処理終了
-//       _setIsProcessing(false);
-//     }
-//   }
-//
-//   /// 処理の開始、終了を設定する
-//   void _setIsProcessing(bool isProcessing) {
-//     this.isProcessing = isProcessing;
-//     notifyListeners();
-//   }
-//
-//   @override
-//   Future init() async {
-//     try {
-//       /// 講師・タグを取得する
-//       teachers = await _teachersRepository.fetchTeachers(loadLimit);
-//       tags = await _teachersRepository.fetchTags();
-//
-//       /// 取得した講師数によってボタンの表示を切り替える
-//       if (teachers.length == 0) {
-//         // ゼロの場合
-//         this.existsTeacher = false;
-//         this.canLoadMore = false;
-//       } else if (teachers.length < this.loadLimit) {
-//         // 1件以上20件未満の場合（底が来た場合）
-//         this.existsTeacher = true;
-//         this.canLoadMore = false;
-//       } else {
-//         // 20件以上ある場合（まだ読み込める場合）
-//         this.existsTeacher = true;
-//         this.canLoadMore = true;
-//       }
-//     } on ApplicationException catch (e) {
-//       errorMessages.clear();
-//       errorMessages.addAll(e.errorMessages);
-//       notifyExceptionOnSlack(context, errorMessage: e.errorMessages.first);
-//     } catch (e) {
-//       errorMessages.clear();
-//       errorMessages.addAll(e.errorMessages);
-//       notifyExceptionOnSlack(context, errorMessage: e.toString());
-//     } finally {
-//       notifyListeners();
-//     }
-//   }
-//
-//   /// さらに読み込む
+  /// Firestore
+  final _firestore = FirebaseFirestore.instance;
+
+  User user;
+
+  /// 検索関連
+  final searchController = TextEditingController();
+  List<User> users = [];
+  List<User> filteredTeachers = []; // 検索してきた講師群
+  List<dynamic> tokens = []; // n-gramのトークン
+
+  /// users の取得
+  Future fetchUsers() async {
+    try {
+      // usersを取得
+      final userSnap = await _firestore.collection('users').get();
+      users = userSnap.docs.map((doc) => User(doc)).toList();
+    } catch (e) {
+      throw (e);
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  /// 処理の開始、終了を設定する
+  // void _setIsProcessing(bool isProcessing) {
+  //   this.isProcessing = isProcessing;
+  //   notifyListeners();
+  // }
+
+  /// ユーザーを追加する
+  Future addUser(BuildContext context) async {
+    try {
+      // 名前を取得
+      final name =
+          await showInputUserNameDialog(context, 'ユーザーを追加します', 'ユーザー名を入力');
+      // 下処理
+
+      // 追加
+      final newUserDoc = _firestore.collection('users').doc();
+      await newUserDoc.set({
+        'userId': newUserDoc.id,
+        'name': name,
+        'tokenMap': {
+          'ダイ': true,
+        },
+      });
+    } catch (e) {} finally {
+      await fetchUsers();
+    }
+  }
+
+  /// ユーザ名入力用ダイアログ
+  Future<String> showInputUserNameDialog(
+    BuildContext context,
+    String title,
+    String hint,
+  ) async {
+    final textEditingController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: SelectableText(
+            title,
+          ),
+          content: TextFormField(
+            controller: textEditingController,
+            cursorColor: Colors.black,
+            maxLines: 1,
+            decoration: InputDecoration(
+              labelText: hint,
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                '追加',
+              ),
+              onPressed: () {
+                Navigator.of(context, rootNavigator: true).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return textEditingController.text;
+  }
+
+  /// さらに読み込む
 //   Future fetchMoreTeachers() async {
 //     startLoading();
 //     try {
