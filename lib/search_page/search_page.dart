@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fulltext_search_example/search_model.dart';
 import 'package:provider/provider.dart';
+
+import 'search_model.dart';
 
 class SearchPage extends StatelessWidget {
   @override

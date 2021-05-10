@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:fulltext_search_example/user.dart';
+import 'package:fulltext_search_example/domain/user.dart';
 
 class SearchModel extends ChangeNotifier {
   /// Firestore
@@ -21,7 +21,7 @@ class SearchModel extends ChangeNotifier {
       final userSnap = await _firestore.collection('users').get();
       users = userSnap.docs.map((doc) => User(doc)).toList();
     } catch (e) {
-      throw (e);
+      print(e.toString());
     } finally {
       notifyListeners();
     }
@@ -52,6 +52,7 @@ class SearchModel extends ChangeNotifier {
       });
     } catch (e) {} finally {
       await fetchUsers();
+      notifyListeners();
     }
   }
 
