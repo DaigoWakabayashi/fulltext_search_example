@@ -11,6 +11,7 @@ class SearchPage extends StatelessWidget {
       builder: (context, child) {
         return Consumer<SearchModel>(builder: (context, model, child) {
           final users = model.users;
+          final searchedUsers = model.searchedUsers;
           return Scaffold(
             appBar: AppBar(
               title: Text('Flutter大学生徒一覧'),
@@ -22,17 +23,17 @@ class SearchPage extends StatelessWidget {
                   controller: model.searchController,
                   textInputAction: TextInputAction.done,
                   onChanged: (text) async {
-                    // if (text.isNotEmpty) {
-                    //   // テキストが入力された
-                    //   model.showFilteredTeacher = true;
-                    //   await model.addTextQuery(text);
-                    //   await model.filterTeachers();
-                    // } else {
-                    //   // テキストが空になった
-                    //   model.showFilteredTeacher = false;
-                    //   await model.init();
-                    //   model.endFiltering();
-                    // }
+                    if (text.isNotEmpty) {
+                      // テキストが入力された
+                      model.showSearchedUser = true;
+                      await model.addTextQuery(text);
+                      await model.searchUsers();
+                    } else {
+                      // テキストが空になった
+                      model.showSearchedUser = false;
+                      model.endSearching();
+                      await model.fetchUsers();
+                    }
                   },
                   maxLines: 1,
                   decoration: InputDecoration(
@@ -58,11 +59,17 @@ class SearchPage extends StatelessWidget {
                   ),
                 ),
                 Column(
-                  children: users
-                      .map((user) => ListTile(
-                            title: Text(user.name),
-                          ))
-                      .toList(),
+                  children: model.showSearchedUser
+                      ? searchedUsers
+                          .map((user) => ListTile(
+                                title: Text(user.name),
+                              ))
+                          .toList()
+                      : users
+                          .map((user) => ListTile(
+                                title: Text(user.name),
+                              ))
+                          .toList(),
                 )
               ],
             ),

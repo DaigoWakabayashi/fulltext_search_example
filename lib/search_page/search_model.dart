@@ -1,18 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fulltext_search_example/domain/user.dart';
+import 'package:fulltext_search_example/text_utils.dart';
 
 class SearchModel extends ChangeNotifier {
   /// Firestore
   final _firestore = FirebaseFirestore.instance;
-
-  User user;
+  List<User> users = []; // ユーザーたち
 
   /// 検索関連
   final searchController = TextEditingController();
-  List<User> users = [];
-  List<User> filteredTeachers = []; // 検索してきた講師群
+  List<User> searchedUsers = []; // 検索してきたユーザーたち
+  Query searchQuery; // 検索の条件
   List<dynamic> tokens = []; // n-gramのトークン
+  bool isSearching = false; // 検索中かどうか
+  bool showSearchedUser = false; // 検索モード（Page側で指定する）
+
+  // List<Tag> tags = []; // 検索タグ
+  // List<String> selectedTags = []; // 検索対象になっているタグ
 
   /// users の取得
   Future fetchUsers() async {
@@ -27,28 +32,101 @@ class SearchModel extends ChangeNotifier {
     }
   }
 
-  /// 処理の開始、終了を設定する
-  // void _setIsProcessing(bool isProcessing) {
-  //   this.isProcessing = isProcessing;
-  //   notifyListeners();
-  // }
+//////////////////////////////////////// 検索用メソッド ////////////////////////////////////////
+
+  /// 検索開始
+  void startSearching() {
+    this.isSearching = true;
+    notifyListeners();
+  }
+
+  /// 検索終了
+  void endSearching() {
+    this.isSearching = false;
+    notifyListeners();
+  }
+
+  /// テキストのクエリを追加する
+  Future<void> addTextQuery(String input) async {
+    // 検索文字数が2文字に満たない場合は検索を行わず、検索結果のリストを空にする
+    if (input.length < 2) {
+      this.searchedUsers = [];
+      endSearching();
+      return;
+    }
+    // 検索用フィールドに入力された文字列の前処理
+    List<String> _words = input.trim().split(' ');
+    // 文字列のリストを渡して、bi-gram を実行
+    List preTokens = TextUtils.tokenize(_words);
+    // 重複しているtokenがある場合、ひとつに纏める
+    this.tokens = preTokens.toSet().toList();
+
+    print(tokens);
+  }
+
+  /// 検索する
+  Future searchUsers() async {
+    startSearching();
+    try {
+      // テキスト検索where句を追加
+      if (tokens.length != 0) {
+        this.tokens.forEach((word) {
+          print(word);
+          searchQuery = _firestore
+              .collection('users')
+              .where('tokenMap.$word', isEqualTo: true);
+        });
+      }
+
+      // print('【クエリ】');
+      // print(searchQuery.parameters);
+
+      // 検索に用いたクエリを変数に保存
+      // this.searchQuery = _query;
+      QuerySnapshot _snap = await searchQuery.get();
+
+      this.searchedUsers = _snap.docs.map((doc) => User(doc)).toList();
+
+      // 選択されたタグがゼロ＆＆テキスト検索をしていない場合、検索モードを解除
+      if (tokens.length == 0) {
+        endSearching();
+        showSearchedUser = false;
+      }
+    } catch (e) {
+      print(e.toString());
+    } finally {
+      endSearching();
+      notifyListeners();
+    }
+  }
+
+  //////////////////////////////////////// 追加用メソッド ////////////////////////////////////////
 
   /// ユーザーを追加する
   Future addUser(BuildContext context) async {
     try {
       // 名前を取得
-      final name =
-          await showInputUserNameDialog(context, 'ユーザーを追加します', 'ユーザー名を入力');
-      // 下処理
+      final inputtedName =
+          await _showInputUserNameDialog(context, 'ユーザーを追加します', 'ユーザー名を入力');
+
+      /// tokenMap を追加するための準備
+      // 不要な空行を取り除く
+      final noBlankName = TextUtils.removeUnnecessaryBlankLines(inputtedName);
+
+      // tokenMap を作成するための入力となる文字列のリスト
+      List _preTokenizedList = [];
+      _preTokenizedList.add(noBlankName);
+      List _tokenizedList = TextUtils.tokenize(_preTokenizedList);
+
+      final tokenMap =
+          Map.fromIterable(_tokenizedList, key: (e) => e, value: (_) => true);
 
       // 追加
       final newUserDoc = _firestore.collection('users').doc();
       await newUserDoc.set({
         'userId': newUserDoc.id,
-        'name': name,
-        'tokenMap': {
-          'ダイ': true,
-        },
+        'name': inputtedName,
+        'tokenMap': tokenMap,
       });
     } catch (e) {} finally {
       await fetchUsers();
@@ -57,7 +135,7 @@ class SearchModel extends ChangeNotifier {
   }
 
   /// ユーザ名入力用ダイアログ
-  Future<String> showInputUserNameDialog(
+  Future<String> _showInputUserNameDialog(
     BuildContext context,
     String title,
     String hint,
@@ -94,192 +172,4 @@ class SearchModel extends ChangeNotifier {
     );
     return textEditingController.text;
   }
-
-  /// さらに読み込む
-//   Future fetchMoreTeachers() async {
-//     startLoading();
-//     try {
-//       // 追加のメンターを取得し、既存のメンターに追加
-//       final moreTeachers =
-//           await _teachersRepository.fetchMoreTeacher(loadLimit);
-//
-//       // 取得したメンター数によってボタンの表示を切り替える
-//       if (moreTeachers.length == 0) {
-//         // ゼロの場合
-//         this.existsTeacher = false;
-//         this.canLoadMore = false;
-//       } else if (moreTeachers.length < this.loadLimit) {
-//         // 1件以上20件未満の場合（底が来た場合）
-//         this.existsTeacher = true;
-//         this.canLoadMore = false;
-//         teachers.addAll(moreTeachers);
-//       } else {
-//         // 20件以上ある場合（まだ読み込める場合）
-//         this.existsTeacher = true;
-//         this.canLoadMore = true;
-//         teachers.addAll(moreTeachers);
-//       }
-//     } on ApplicationException catch (e) {
-//       errorMessages.clear();
-//       errorMessages.addAll(e.errorMessages);
-//       notifyExceptionOnSlack(context, errorMessage: e.errorMessages.first);
-//     } catch (e) {
-//       errorMessages.clear();
-//       errorMessages.addAll(e.errorMessages);
-//       notifyExceptionOnSlack(context, errorMessage: e.toString());
-//     } finally {
-//       endLoading();
-//     }
-//   }
-//
-//   //////////////////////////////////////// 検索用メソッド ////////////////////////////////////////
-//
-//   /// 検索開始
-//   void startFiltering() {
-//     this.isFiltering = true;
-//     notifyListeners();
-//   }
-//
-//   /// 検索終了
-//   void endFiltering() {
-//     this.isFiltering = false;
-//     notifyListeners();
-//   }
-//
-//   /// 検索する
-//   Future filterTeachers() async {
-//     startFiltering();
-//     try {
-//       // 最低限のクエリ
-//       Query _query = FirebaseFirestore.instance
-//           .collection('teachers')
-//           .where('hasPlan', isEqualTo: true)
-//           .where('status', isEqualTo: kTeacherStatusVerified)
-//           .limit(loadLimit);
-//
-//       // タグ群の数だけwhere句を追加
-//       if (selectedTags.length != 0) {
-//         this.selectedTags.forEach((tag) {
-//           _query = _query.where('tagMap.$tag', isEqualTo: true);
-//         });
-//       }
-//       // テキスト検索where句を追加
-//       if (tokens.length != 0) {
-//         this.tokens.forEach((word) {
-//           _query = _query.where('tokenMap.$word', isEqualTo: true);
-//         });
-//       }
-//
-//       print('【クエリ】');
-//       print(_query.parameters);
-//
-//       // 検索に用いたクエリを変数に保存
-//       this.filterQuery = _query;
-//       QuerySnapshot _snap = await _query.get();
-//
-//       // 取得した講師の数から「さらに読み込めるか」を判断
-//       // そして「次の読み込み開始点」を設定
-//       if (_snap.docs.length == 0) {
-//         this.existsFilteredTeacher = false;
-//         this.canLoadMoreFiltered = false;
-//         this.filteredTeachers = [];
-//       } else if (_snap.docs.length < this.loadLimit) {
-//         this.existsFilteredTeacher = true;
-//         this.canLoadMoreFiltered = false;
-//         _teachersRepository.filteredLastVisible =
-//             _snap.docs[_snap.docs.length - 1];
-//         this.filteredTeachers = _snap.docs.map((doc) => Teacher(doc)).toList();
-//       } else {
-//         this.existsFilteredTeacher = true;
-//         this.canLoadMoreFiltered = true;
-//         _teachersRepository.filteredLastVisible =
-//             _snap.docs[_snap.docs.length - 1];
-//         this.filteredTeachers = _snap.docs.map((doc) => Teacher(doc)).toList();
-//       }
-//       // 選択されたタグがゼロ＆＆テキスト検索をしていない場合、検索モードを解除
-//       if (selectedTags.length == 0 && tokens.length == 0) {
-//         isFiltering = false;
-//         showFilteredTeacher = false;
-//       }
-//     } on ApplicationException catch (e) {
-//       errorMessages.clear();
-//       errorMessages.addAll(e.errorMessages);
-//     } finally {
-//       endFiltering();
-//       notifyListeners();
-//     }
-//   }
-//
-//   /// タグクエリを追加する
-//   Future addTagsQuery(Tag tag) async {
-//     // タグを選択状態にする
-//     tag.isSelected = true;
-//     // tagをクエリに追加
-//     this.selectedTags.add(tag.tagName);
-//   }
-//
-//   /// タグのクエリを取り除く
-//   Future removeTagsQuery(Tag tag) async {
-//     // 選択状態にする
-//     tag.isSelected = false;
-//     // tagをクエリから削除
-//     this.selectedTags.remove(tag.tagName);
-//   }
-//
-//   /// 講師を検索する
-//   Future<void> addTextQuery(String input) async {
-//     // 検索文字数が2文字に満たない場合は検索を行わず、検索結果のリストを空にする
-//     if (input.length < 2) {
-//       this.filteredTeachers = [];
-//       endFiltering();
-//       return;
-//     }
-//     // 検索用フィールドに入力された文字列の前処理
-//     List<String> _words = input.trim().split(' ');
-//     // 文字列のリストを渡して、bi-gram を実行
-//     List preTokens = TextUtils.tokenize(_words);
-//     // 重複しているtokenがある場合、ひとつに纏める
-//     List tokens = preTokens.toSet().toList();
-//     this.tokens = tokens;
-//   }
-//
-//   /// 検索した講師をさらに読み込む
-//   Future loadMoreFilteredTeachers() async {
-//     startLoading();
-//     try {
-//       /// 前回の検索クエリを元にスナップショットを取得
-//       QuerySnapshot _snap = await this
-//           .filterQuery
-//           .startAfterDocument(_teachersRepository.filteredLastVisible)
-//           .get();
-//
-//       // 取得したメンター数によってボタンの表示を切り替える
-//       if (_snap.docs.length == 0) {
-//         // ゼロの場合
-//         this.canLoadMoreFiltered = false;
-//       } else if (_snap.docs.length < this.loadLimit) {
-//         // loadLimit 未満の場合
-//         this.canLoadMoreFiltered = false;
-//         _teachersRepository.filteredLastVisible =
-//             _snap.docs[_snap.docs.length - 1];
-//         final _filteredTeachers =
-//             _snap.docs.map((doc) => Teacher(doc)).toList();
-//         this.filteredTeachers.addAll(_filteredTeachers);
-//       } else {
-//         // loadLimit 以上の場合
-//         this.canLoadMoreFiltered = true;
-//         _teachersRepository.filteredLastVisible =
-//             _snap.docs[_snap.docs.length - 1];
-//         final _filteredTeachers =
-//             _snap.docs.map((doc) => Teacher(doc)).toList();
-//         this.filteredTeachers.addAll(_filteredTeachers);
-//       }
-//     } on ApplicationException catch (e) {
-//       errorMessages.clear();
-//       errorMessages.addAll(e.errorMessages);
-//     } finally {
-//       endLoading();
-//     }
-//   }
-
 }
