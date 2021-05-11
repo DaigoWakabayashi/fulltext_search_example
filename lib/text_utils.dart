@@ -148,28 +148,6 @@ class TextUtils {
         .trim();
   }
 
-  /// N-Gram
-  static List nGram(int n, String text) {
-    if (n < 1 || n == double.infinity) {
-      throw ('$n is not a valid argument for n-gram');
-    }
-
-    List nGrams = [];
-
-    // 対象が空白('')または一文字の場合は空のリストを返す
-    if (text.length < 1) {
-      return nGrams;
-    }
-
-    // N-gram（N文字ずつに分解したリストを返す）
-    for (int i = 0; i < text.length - n + 1; i++) {
-      nGrams.add('');
-      nGrams[i] = text.substring(i, i + n);
-    }
-
-    return nGrams;
-  }
-
   /// 各前処理を行って、Bi-gram の結果をリストで返す
   static List tokenize(List textList) {
     List resultList = [];
@@ -193,5 +171,27 @@ class TextUtils {
       }
     });
     return resultList;
+  }
+
+  /// N-Gram
+  static List nGram(int n, String text) {
+    if (n < 1 || n == double.infinity) {
+      throw ('$n is not a valid argument for n-gram');
+    }
+
+    List nGrams = [];
+
+    // 対象が空白('')または一文字の場合は空のリストを返す
+    if (text.length < 1) {
+      return nGrams;
+    }
+
+    // N-gram（N文字ずつに分解したリストを返す）
+    for (int i = 0; i < text.length - n + 1; i++) {
+      nGrams.add('');
+      nGrams[i] = text.substring(i, i + n);
+    }
+
+    return nGrams;
   }
 }
