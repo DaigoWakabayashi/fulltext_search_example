@@ -16,9 +16,6 @@ class SearchModel extends ChangeNotifier {
   bool isSearching = false; // 検索中かどうか
   bool showSearchedUser = false; // 検索モード（Page側で指定する）
 
-  // List<Tag> tags = []; // 検索タグ
-  // List<String> selectedTags = []; // 検索対象になっているタグ
-
   /// users の取得
   Future fetchUsers() async {
     try {
