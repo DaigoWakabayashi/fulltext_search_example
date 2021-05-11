@@ -6,7 +6,7 @@ class SearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<SearchModel>(
-      create: (_) => SearchModel()..fetchMembers(),
+      create: (_) => SearchModel()..listenMembers(),
       builder: (context, child) {
         return Consumer<SearchModel>(builder: (context, model, child) {
           // メンバー
@@ -18,51 +18,55 @@ class SearchPage extends StatelessWidget {
             appBar: AppBar(
               title: Text('Flutter大学メンバー一覧'),
             ),
-            body: Column(
-              children: [
-                /// 検索TextField
-                TextFormField(
-                  controller: model.searchController,
-                  textInputAction: TextInputAction.done,
-                  onChanged: (text) async {
-                    if (text.isNotEmpty) {
-                      // テキストが入力された
-                      model.isSearching = true;
-                      await model.searchMembers(text);
-                    } else {
-                      // テキストが空になった
-                      model.isSearching = false;
-                      await model.fetchMembers();
-                    }
-                  },
-                  decoration: InputDecoration(
-                    hintText: '名前を入力してください（2文字以上）',
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: Colors.grey,
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  /// 検索TextField
+                  Material(
+                    child: TextFormField(
+                      controller: model.searchController,
+                      textInputAction: TextInputAction.done,
+                      onChanged: (text) async {
+                        if (text.isNotEmpty) {
+                          // テキストが入力された
+                          model.startFiltering();
+                          await model.searchMembers(text);
+                        } else {
+                          // テキストが空になった
+                          model.isSearching = false;
+                          model.endFiltering();
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: '名前を入力してください（2文字以上）',
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                        ),
+                      ),
                     ),
                   ),
-                ),
 
-                /// メンバーのリスト
-                Column(
-                  children: model.isSearching
-                      ?
-                      // 検索中は searchedMembers を表示
-                      searchedMembers
-                          .map((user) => ListTile(
-                                title: Text(user.name),
-                              ))
-                          .toList()
-                      :
-                      // 検索中でない場合は通常の members を表示
-                      members
-                          .map((user) => ListTile(
-                                title: Text(user.name),
-                              ))
-                          .toList(),
-                )
-              ],
+                  /// メンバーのリスト
+                  Column(
+                    children: model.isSearching
+                        ?
+                        // 検索中は searchedMembers を表示
+                        searchedMembers
+                            .map((user) => ListTile(
+                                  title: Text(user.name),
+                                ))
+                            .toList()
+                        :
+                        // 検索中でない場合は通常の members を表示
+                        members
+                            .map((user) => ListTile(
+                                  title: Text(user.name),
+                                ))
+                            .toList(),
+                  )
+                ],
+              ),
             ),
 
             /// メンバー追加ボタン

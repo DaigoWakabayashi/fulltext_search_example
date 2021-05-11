@@ -15,13 +15,16 @@ class SearchModel extends ChangeNotifier {
   bool isSearching = false; // 検索モード（Page側で指定する）
   final searchController = TextEditingController();
 
-  /// members の取得
-  Future fetchMembers() async {
+  /// members を取得
+  void listenMembers() {
     try {
       // Firestore の members コレクションを取得
-      final memberSnap = await _firestore.collection('members').get();
+      final memberSnap = _firestore.collection('members').snapshots();
       // Member クラスに変換、リストにする
-      members = memberSnap.docs.map((doc) => Member(doc)).toList();
+      memberSnap.listen((snapshot) {
+        final docs = snapshot.docs;
+        this.members = docs.map((doc) => Member(doc)).toList();
+      });
     } catch (e) {
       print(e.toString());
     } finally {
@@ -30,6 +33,18 @@ class SearchModel extends ChangeNotifier {
   }
 
 //////////////////////////////////////// 検索用メソッド ////////////////////////////////////////
+
+  /// 検索開始
+  void startFiltering() {
+    this.isSearching = true;
+    notifyListeners();
+  }
+
+  /// 検索終了
+  void endFiltering() {
+    this.isSearching = false;
+    notifyListeners();
+  }
 
   /// メンバーを検索する
   Future searchMembers(String input) async {
@@ -52,7 +67,6 @@ class SearchModel extends ChangeNotifier {
       /// テキスト検索where句を追加
       if (tokens.length != 0) {
         this.tokens.forEach((word) {
-          print(word);
           searchQuery = _firestore
               .collection('members')
               .where('tokenMap.$word', isEqualTo: true);
@@ -108,7 +122,6 @@ class SearchModel extends ChangeNotifier {
     } catch (e) {
       print(e);
     } finally {
-      await fetchMembers();
       notifyListeners();
     }
   }
