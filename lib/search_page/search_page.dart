@@ -22,27 +22,25 @@ class SearchPage extends StatelessWidget {
               child: Column(
                 children: [
                   /// 検索TextField
-                  Material(
-                    child: TextFormField(
-                      controller: model.searchController,
-                      textInputAction: TextInputAction.done,
-                      onChanged: (text) async {
-                        if (text.isNotEmpty) {
-                          // テキストが入力された
-                          model.startFiltering();
-                          await model.searchMembers(text);
-                        } else {
-                          // テキストが空になった
-                          model.isSearching = false;
-                          model.endFiltering();
-                        }
-                      },
-                      decoration: InputDecoration(
-                        hintText: '名前を入力してください（2文字以上）',
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey,
-                        ),
+                  TextFormField(
+                    controller: model.searchController,
+                    textInputAction: TextInputAction.done,
+                    onChanged: (text) async {
+                      if (text.isNotEmpty) {
+                        // テキストが入力された
+                        model.startFiltering();
+                        await model.searchMembers(text);
+                      } else {
+                        // テキストが空になった
+                        model.isSearching = false;
+                        model.endFiltering();
+                      }
+                    },
+                    decoration: InputDecoration(
+                      hintText: '名前を入力してください（2文字以上）',
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Colors.grey,
                       ),
                     ),
                   ),
