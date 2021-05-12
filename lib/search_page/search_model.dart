@@ -67,14 +67,13 @@ class SearchModel extends ChangeNotifier {
       print(this.biGramList);
 
       /// テキスト検索where句を追加
+      Query query = _firestore.collection('members');
       this.biGramList.forEach((word) {
-        searchQuery = _firestore
-            .collection('members')
-            .where('biGramMap.$word', isEqualTo: true);
+        query = query.where('biGramMap.$word', isEqualTo: true);
       });
 
       /// 作成したクエリで取得する
-      QuerySnapshot _snap = await searchQuery.get();
+      QuerySnapshot _snap = await query.get();
       this.searchedMembers = _snap.docs.map((doc) => Member(doc)).toList();
     } catch (e) {
       print(e.toString());
