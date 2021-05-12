@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fulltext_search_example/domain/member.dart';
-import 'package:fulltext_search_example/text_utils.dart';
+import 'package:fulltext_search_example/utils/text_utils.dart';
 
 class SearchModel extends ChangeNotifier {
   /// Firestore
