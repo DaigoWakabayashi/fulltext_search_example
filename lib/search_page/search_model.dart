@@ -15,15 +15,15 @@ class SearchModel extends ChangeNotifier {
   bool isSearching = false; // 検索モード（Page側で指定する）
   final searchController = TextEditingController();
 
-  /// members を取得
+  /// members をリアルタイム取得
   void listenMembers() {
     try {
       // Firestore の members コレクションを取得
-      final memberSnap = _firestore.collection('members').snapshots();
-      // Member クラスに変換、リストにする
-      memberSnap.listen((snapshot) {
+      final snapshots = _firestore.collection('members').snapshots();
+      snapshots.listen((snapshot) {
         final docs = snapshot.docs;
         this.members = docs.map((doc) => Member(doc)).toList();
+        notifyListeners();
       });
     } catch (e) {
       print(e.toString());
