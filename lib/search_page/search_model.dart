@@ -11,7 +11,7 @@ class SearchModel extends ChangeNotifier {
   /// 検索関連
   List<Member> searchedMembers = []; // 検索してきたユーザーたち
   Query searchQuery; // 検索の条件
-  List<dynamic> tokens = []; // n-gramのトークン（2文字ずつの配列）
+  List<dynamic> biGramToken = []; // n-gramのトークン（2文字ずつの配列）
   bool isSearching = false; // 検索モード（Page側で指定する）
   final controller = TextEditingController(); // 検索TextFieldのコントローラー
 
@@ -62,13 +62,15 @@ class SearchModel extends ChangeNotifier {
       List preTokens = TextUtils.tokenize(_words);
 
       /// 重複しているtokenがある場合、ひとつに纏める
-      this.tokens = preTokens.toSet().toList();
+      this.biGramToken = preTokens.toSet().toList();
+
+      print(biGramToken);
 
       /// テキスト検索where句を追加
-      this.tokens.forEach((word) {
+      this.biGramToken.forEach((word) {
         searchQuery = _firestore
             .collection('members')
-            .where('tokenMap.$word', isEqualTo: true);
+            .where('biGramTokenMap.$word', isEqualTo: true);
       });
 
       /// 作成したクエリで取得する
@@ -103,12 +105,14 @@ class SearchModel extends ChangeNotifier {
       final tokenMap =
           Map.fromIterable(_tokenizedList, key: (e) => e, value: (_) => true);
 
+      print(tokenMap);
+
       /// Firestore に追加
       final newMemberDoc = _firestore.collection('members').doc();
       await newMemberDoc.set({
         'id': newMemberDoc.id,
         'name': inputtedName,
-        'tokenMap': tokenMap,
+        'biGramTokenMap': tokenMap,
       });
     } catch (e) {
       print(e);
