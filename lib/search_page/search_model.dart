@@ -55,7 +55,7 @@ class SearchModel extends ChangeNotifier {
         return;
       }
 
-      /// 検索用フィールドに入力された文字列の前処理
+      /// 空白除去して配列にする
       List<String> _words = input.trim().split(' ');
 
       /// 文字列のリストを渡して、bi-gram を実行
@@ -74,15 +74,8 @@ class SearchModel extends ChangeNotifier {
       }
 
       /// 作成したクエリで取得する
-      print('【クエリ】');
-      print(searchQuery.parameters);
       QuerySnapshot _snap = await searchQuery.get();
       this.searchedMembers = _snap.docs.map((doc) => Member(doc)).toList();
-
-      // 選択されたタグがゼロ＆＆テキスト検索をしていない場合、検索モードを解除
-      if (tokens.length == 0) {
-        isSearching = false;
-      }
     } catch (e) {
       print(e.toString());
     } finally {
@@ -97,7 +90,7 @@ class SearchModel extends ChangeNotifier {
     try {
       /// 名前を取得
       final inputtedName =
-          await _showInputDialog(context, 'メンバーを追加します', '名前を入力');
+          await _showInputDialog(context, 'メンバーを追加します', '名前を入力（2文字以上）');
 
       /// tokenMap の作成
       // ①空行を取り除く
@@ -108,7 +101,7 @@ class SearchModel extends ChangeNotifier {
       _preTokenizedList.add(noBlankName);
       List _tokenizedList = TextUtils.tokenize(_preTokenizedList);
 
-      // ③tokenMap を作成
+      // ③trueMap 型の tokenMap を作成
       final tokenMap =
           Map.fromIterable(_tokenizedList, key: (e) => e, value: (_) => true);
 
@@ -158,7 +151,7 @@ class SearchModel extends ChangeNotifier {
         );
       },
     );
-    if (textEditingController.text.length > 2) {
+    if (textEditingController.text.length >= 2) {
       return textEditingController.text;
     }
   }

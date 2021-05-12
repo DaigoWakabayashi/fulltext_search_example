@@ -153,6 +153,10 @@ class TextUtils {
     List resultList = [];
     String preVal = '';
 
+    /// 数値やアルファベットの全角文字を半角にする
+    /// ひらがなをカタカナに変換する
+    /// 半角カナを全角カナに変換する
+    /// 句読点や記号の区切りを切ったりくっつけたりする
     final texts =
         halfWiden(hira2kata(kanaFullWiden(chopChink(textList.join(' ')))))
             .toLowerCase()
