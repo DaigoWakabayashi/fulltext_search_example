@@ -23,7 +23,7 @@ class SearchPage extends StatelessWidget {
                 children: [
                   /// 検索TextField
                   TextFormField(
-                    controller: model.searchController,
+                    controller: model.controller,
                     textInputAction: TextInputAction.done,
                     onChanged: (text) async {
                       if (text.isNotEmpty) {

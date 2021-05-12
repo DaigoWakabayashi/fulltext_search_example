@@ -6,14 +6,14 @@ import 'package:fulltext_search_example/utils/text_utils.dart';
 class SearchModel extends ChangeNotifier {
   /// Firestore
   final _firestore = FirebaseFirestore.instance;
-  List<Member> members = []; // ユーザーたち
+  List<Member> members = [];
 
   /// 検索関連
   List<Member> searchedMembers = []; // 検索してきたユーザーたち
   Query searchQuery; // 検索の条件
-  List<dynamic> tokens = []; // n-gramのトークン
+  List<dynamic> tokens = []; // n-gramのトークン（2文字ずつの配列）
   bool isSearching = false; // 検索モード（Page側で指定する）
-  final searchController = TextEditingController();
+  final controller = TextEditingController(); // 検索TextFieldのコントローラー
 
   /// members をリアルタイム取得
   void listenMembers() {
@@ -65,13 +65,11 @@ class SearchModel extends ChangeNotifier {
       this.tokens = preTokens.toSet().toList();
 
       /// テキスト検索where句を追加
-      if (tokens.length != 0) {
-        this.tokens.forEach((word) {
-          searchQuery = _firestore
-              .collection('members')
-              .where('tokenMap.$word', isEqualTo: true);
-        });
-      }
+      this.tokens.forEach((word) {
+        searchQuery = _firestore
+            .collection('members')
+            .where('tokenMap.$word', isEqualTo: true);
+      });
 
       /// 作成したクエリで取得する
       QuerySnapshot _snap = await searchQuery.get();
