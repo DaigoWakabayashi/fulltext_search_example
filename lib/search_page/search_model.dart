@@ -11,7 +11,7 @@ class SearchModel extends ChangeNotifier {
   /// 検索関連
   List<Member> searchedMembers = []; // 検索してきたユーザーたち
   Query searchQuery; // 検索の条件
-  List<dynamic> biGramToken = []; // n-gramのトークン（2文字ずつの配列）
+  List<dynamic> biGramList = []; // bi-Gramの配列（2文字ずつの配列）
   bool isSearching = false; // 検索モード（Page側で指定する）
   final controller = TextEditingController(); // 検索TextFieldのコントローラー
 
@@ -59,18 +59,18 @@ class SearchModel extends ChangeNotifier {
       List<String> _words = input.trim().split(' ');
 
       /// 文字列のリストを渡して、bi-gram を実行
-      List preTokens = TextUtils.tokenize(_words);
+      List biGramList = TextUtils.tokenize(_words);
 
       /// 重複しているtokenがある場合、ひとつに纏める
-      this.biGramToken = preTokens.toSet().toList();
+      this.biGramList = biGramList.toSet().toList();
 
-      print(biGramToken);
+      print(this.biGramList);
 
       /// テキスト検索where句を追加
-      this.biGramToken.forEach((word) {
+      this.biGramList.forEach((word) {
         searchQuery = _firestore
             .collection('members')
-            .where('biGramTokenMap.$word', isEqualTo: true);
+            .where('biGramMap.$word', isEqualTo: true);
       });
 
       /// 作成したクエリで取得する
@@ -92,27 +92,27 @@ class SearchModel extends ChangeNotifier {
       final inputtedName =
           await _showInputDialog(context, 'メンバーを追加します', '名前を入力（2文字以上）');
 
-      /// tokenMap の作成
+      /// biGramTokenMap の作成
       // ①空行を取り除く
       final noBlankName = TextUtils.removeUnnecessaryBlankLines(inputtedName);
 
-      // ②tokenMap を作成するための文字リストを作成
-      List _preTokenizedList = [];
-      _preTokenizedList.add(noBlankName);
-      List _tokenizedList = TextUtils.tokenize(_preTokenizedList);
+      // ②2文字ずつの配列（biGramList）を作成
+      List _preBiGramList = [];
+      _preBiGramList.add(noBlankName);
+      List biGramList = TextUtils.tokenize(_preBiGramList);
 
-      // ③trueMap 型の tokenMap を作成
-      final tokenMap =
-          Map.fromIterable(_tokenizedList, key: (e) => e, value: (_) => true);
+      // ③配列をtrueMap型に変更
+      final biGramMap =
+          Map.fromIterable(biGramList, key: (e) => e, value: (_) => true);
 
-      print(tokenMap);
+      print(biGramMap);
 
       /// Firestore に追加
       final newMemberDoc = _firestore.collection('members').doc();
       await newMemberDoc.set({
         'id': newMemberDoc.id,
         'name': inputtedName,
-        'biGramTokenMap': tokenMap,
+        'biGramMap': biGramMap,
       });
     } catch (e) {
       print(e);

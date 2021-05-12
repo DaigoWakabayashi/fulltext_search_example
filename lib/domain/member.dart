@@ -3,11 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Member {
   String id;
   String name;
-  Map biGramTokenMap;
+  Map biGramMap;
 
   Member(DocumentSnapshot doc) {
     id = doc.id;
     name = doc.data()['name'];
-    biGramTokenMap = doc.data()['biGramTokenMap'];
+    biGramMap = doc.data()['biGramMap'];
   }
 }
