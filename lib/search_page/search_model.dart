@@ -64,13 +64,13 @@ class SearchModel extends ChangeNotifier {
       /// 重複しているtokenがある場合、ひとつに纏める
       this.biGramList = biGramList.toSet().toList();
 
-      print(this.biGramList);
-
       /// テキスト検索where句を追加
       Query query = _firestore.collection('members');
       this.biGramList.forEach((word) {
         query = query.where('biGramMap.$word', isEqualTo: true);
       });
+
+      print(query.parameters);
 
       /// 作成したクエリで取得する
       QuerySnapshot _snap = await query.get();
