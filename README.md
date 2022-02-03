@@ -1,4 +1,5 @@
 # fulltext_search_example
 
-共同勉強会用サンプルプロジェクト
+Firestore だけで作る全文検索機能のサンプルプロジェクトです。
+
 
